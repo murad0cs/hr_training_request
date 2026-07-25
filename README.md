@@ -59,8 +59,9 @@ opens on the filter it cares about (here, the requester's "My Requests").
 | `hr.employee` | Computed `training_request_count` and a smart button, both filtered by the viewer's access rights. |
 | Tracking | State changes and key fields logged to the chatter (`mail.thread`). |
 | CI | GitHub Actions installs the module and runs the test suite on every push. |
+| i18n | A `.pot` translation template is provided for translators. |
 | Demo data | One user per role, a reporting line, and sample requests in every stage. |
-| Tests | A `TransactionCase` suite covering the security-critical paths. |
+| Tests | A 28-case `TransactionCase` suite covering the security-critical paths. |
 
 ---
 
@@ -172,10 +173,12 @@ docker exec odoo odoo -d odoo -i hr_training_request \
   --test-enable --test-tags /hr_training_request --stop-after-init
 ```
 
-The suite exercises the role-gated transitions, illegal-jump blocking via raw
-`write`, record-rule visibility per role, the HR-only field being stripped for
-non-HR users, the cost/date validation, and the access-filtered smart-button
-count.
+The suite (28 tests) exercises the role-gated transitions, illegal-jump blocking
+via raw `write`, record-rule visibility per role (including multi-company
+isolation), the HR-only field being stripped for non-HR users, per-user button
+flags, the reject wizard and its role enforcement, the approver-activity
+lifecycle, approval/rejection emails, the cost/date validation, and the
+access-filtered smart-button count.
 
 ---
 
@@ -236,8 +239,10 @@ record before delegating to `super()`. That method does two things:
   cancels; the employee's manager approves/rejects at `submitted`; an HR approver
   approves/rejects at `manager_approved`).
 
-The six `action_*` button methods are thin wrappers that just set the target
-state, so authorisation is defined exactly once. This is the "never trust the
+The `action_*` button methods are thin wrappers: submit, approve, final-approve
+and cancel just set the target state, while the two reject actions open the
+reason wizard, which writes the state back through the same guarded `write()`.
+Either way authorisation is defined exactly once. This is the "never trust the
 client" requirement: even a direct `write({'state': ...})` from an external
 script is validated. `end_date >= start_date` and non-negative `cost` are
 enforced both by `@api.constrains` (always) and re-checked at submission.
@@ -248,8 +253,9 @@ Button visibility is driven by four computed booleans - `can_submit`,
 `can_cancel`, `can_manager_review`, `can_hr_review` - which reuse the exact same
 role predicates that `write()` uses. That keeps the buttons and the server in
 agreement: a button is shown only when the corresponding server-side action
-would actually succeed. The `groups=` attributes on the buttons are an extra
-convenience, not the enforcement.
+would actually succeed. Being user-dependent, the compute is keyed with
+`@api.depends_context('uid')` so each viewer gets its own result. The `groups=`
+attributes on the buttons are an extra convenience, not the enforcement.
 
 The **HR Notes** field is declared with a field-level
 `groups="...group_training_hr_approver"`. The ORM removes the field entirely
