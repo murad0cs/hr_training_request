@@ -7,7 +7,7 @@ Lets employees request external training or certifications and routes each
 request through a role-gated manager and HR approval workflow. Access is
 enforced with record rules, access rights and server-side state guards.
 """,
-    'author': 'Assignment Candidate',
+    'author': 'Md. Abdullah Al Murad',
     'category': 'Human Resources',
     'license': 'LGPL-3',
     'depends': ['hr', 'mail'],
