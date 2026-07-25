@@ -16,6 +16,33 @@ guards), a clean state machine, and role-based UI, rather than field breadth.
 
 ---
 
+## Screenshots
+
+The same request seen by each role, showing that the buttons and the HR Notes
+tab change with who is looking.
+
+**Employee, draft stage** - fields editable, only Submit / Cancel, and no HR
+Notes tab.
+
+![Employee draft view](docs/01-employee-draft.png)
+
+**Manager, submitted stage** - fields read-only, Approve / Reject for the
+manager's own report, still no HR Notes tab.
+
+![Manager submitted view](docs/02-manager-submitted.png)
+
+**HR approver, manager-approved stage** - Final Approve / Reject, and the extra
+**HR Notes** tab that only this role can see.
+
+![HR approver view](docs/03-hr-manager-approved.png)
+
+**List view** - the status column uses colour-coded badges, and each role's menu
+opens on the filter it cares about (here, the requester's "My Requests").
+
+![List view with status badges](docs/04-list-status-badges.png)
+
+---
+
 ## 1. What is implemented
 
 | Area | Summary |
