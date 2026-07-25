@@ -17,6 +17,7 @@ enforced with record rules, access rights and server-side state guards.
         'security/ir.model.access.csv',
         'data/ir_sequence_data.xml',
         'views/hr_training_request_views.xml',
+        'views/hr_training_request_reject_wizard_views.xml',
         'views/hr_training_request_menus.xml',
         'views/hr_employee_views.xml',
     ],

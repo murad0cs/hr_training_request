@@ -23,6 +23,8 @@ guards), a clean state machine, and role-based UI, rather than field breadth.
 | Row-level security | `ir.model.access.csv` for CRUD **plus** record rules: own / own + reports / all-company (multi-company aware). |
 | State machine | `draft -> submitted -> manager_approved -> hr_approved`, with `rejected` and `cancelled` branches. Every transition validated and role-checked in `write()`. |
 | Role-based UI | Workflow buttons and the HR-notes field appear only for the right role at the right stage, and are enforced again in Python. Data fields lock after `draft`. |
+| Reject reason | Rejecting opens a wizard that requires a reason; it is stored on the record and posted to the chatter. |
+| Approver activities | On submit a to-do is scheduled for the manager; on manager approval it moves to the HR approvers; it is cleared when the request is finalised. |
 | `hr.employee` | Computed `training_request_count` and a smart button, both filtered by the viewer's access rights. |
 | Tracking | State changes and key fields logged to the chatter (`mail.thread`). |
 | Demo data | One user per role, a reporting line, and sample requests in every stage. |
@@ -37,6 +39,7 @@ hr_training_request/
 ├── __manifest__.py
 ├── models/
 │   ├── hr_training_request.py     # model, state machine, guards, actions
+│   ├── hr_training_request_reject_wizard.py   # mandatory reject reason
 │   └── hr_employee.py             # count field + smart button
 ├── security/
 │   ├── hr_training_request_security.xml   # groups + record rules
@@ -45,6 +48,7 @@ hr_training_request/
 │   └── ir_sequence_data.xml       # TR#### reference sequence
 ├── views/
 │   ├── hr_training_request_views.xml      # form, tree, search, actions
+│   ├── hr_training_request_reject_wizard_views.xml
 │   ├── hr_training_request_menus.xml      # role-targeted menus
 │   └── hr_employee_views.xml              # smart button
 ├── demo/
@@ -226,10 +230,25 @@ counts requests they may see. The compute is decorated with
 shared within a transaction. The smart button opens the requests filtered to
 that employee, with the record rules still applying on top.
 
-### 4.7 No `sudo()`
+### 4.7 Reject reason and approver activities
 
-`sudo()` is used nowhere in the module, so nothing silently bypasses the access
-checks. The count and the smart button rely on normal, rule-respecting queries.
+Rejecting is a decision that should be explained, so both reject buttons open a
+small `TransientModel` wizard that requires a reason. The wizard calls back into
+`_apply_rejection()`, which writes the state through the same guarded `write()`
+(so the stage-appropriate role is still enforced), stores the reason and posts
+it to the chatter.
+
+To make the workflow push rather than pull, a to-do activity is scheduled for
+the next approver: for the manager on submit, and for the HR approvers on
+manager approval. Activities are cleared when the request is approved, rejected
+or cancelled, so nobody is left with a stale task.
+
+### 4.8 `sudo()`
+
+The only `sudo()` in the module is in `_hr_approver_users()`, used purely to read
+who belongs to the HR approver group so their activities can be scheduled. It is
+commented in the code. It does not touch the training-request records or bypass
+any of their access rules; all data access stays rule-respecting.
 
 ---
 
@@ -273,11 +292,8 @@ cancelled       cancelled  rejected              rejected
 
 ## 7. What I would improve with more time
 
-- A **reject-reason** wizard that captures a mandatory comment, posts it to the
-  chatter and optionally emails the requester, instead of a bare Reject button.
-- **Activity scheduling**: on submit, schedule a "to approve" activity for the
-  manager, and on manager approval one for HR, so approvals are pushed to each
-  approver's inbox rather than being pull-only.
-- **Email templates** on each transition.
+- **Email templates** on each transition (the reject reason and approver
+  activities are already implemented; email would layer on top).
 - Budget or approval-limit logic (for example auto-routing high-cost requests to a
   second approver) and reporting views (pivot/graph by cost, provider, period).
+- A configurable approval chain instead of the fixed manager then HR path.

@@ -63,6 +63,10 @@
                         </group>
                     </group>
 
+                    <group invisible="state != 'rejected'">
+                        <field name="rejection_reason" readonly="1"/>
+                    </group>
+
                     <notebook>
                         <page string="Description" name="description">
                             <field name="justification"

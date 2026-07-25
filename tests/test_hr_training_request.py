@@ -79,15 +79,27 @@ class TestHrTrainingRequest(TransactionCase):
         with self.assertRaises(AccessError):
             request.with_user(self.manager).action_hr_approve()
 
-    def test_manager_rejects(self):
-        request = self._submitted()
-        request.with_user(self.manager).action_manager_reject()
-        self.assertEqual(request.state, 'rejected')
+    def _reject(self, request, user, reason):
+        wizard = self.env['hr.training.request.reject.wizard'].with_user(user).create({
+            'request_id': request.id, 'reason': reason})
+        wizard.action_confirm()
 
-    def test_hr_rejects(self):
-        request = self._manager_approved()
-        request.with_user(self.hr).action_hr_reject()
+    def test_manager_rejects_with_reason(self):
+        request = self._submitted()
+        self._reject(request, self.manager, 'Not this quarter')
         self.assertEqual(request.state, 'rejected')
+        self.assertEqual(request.rejection_reason, 'Not this quarter')
+
+    def test_hr_rejects_with_reason(self):
+        request = self._manager_approved()
+        self._reject(request, self.hr, 'Over budget')
+        self.assertEqual(request.state, 'rejected')
+        self.assertEqual(request.rejection_reason, 'Over budget')
+
+    def test_requester_cannot_reject_via_wizard(self):
+        request = self._submitted()
+        with self.assertRaises(AccessError):
+            self._reject(request, self.requester, 'trying to reject')
 
     def test_owner_cancels(self):
         request = self._create()
@@ -149,3 +161,25 @@ class TestHrTrainingRequest(TransactionCase):
         self.assertEqual(as_manager.training_request_count, 2)
         as_outsider = self.employee_emp.with_user(self.outsider)
         self.assertEqual(as_outsider.training_request_count, 0)
+
+    # Activities -------------------------------------------------------
+
+    def test_submit_schedules_manager_activity(self):
+        request = self._submitted()
+        todos = request.activity_ids.filtered(
+            lambda a: a.user_id == self.manager)
+        self.assertTrue(todos, "submit should schedule a to-do for the manager")
+
+    def test_manager_approval_moves_activity_to_hr(self):
+        request = self._manager_approved()
+        self.assertFalse(
+            request.activity_ids.filtered(lambda a: a.user_id == self.manager),
+            "the manager's activity should be cleared after approval")
+        self.assertTrue(
+            request.activity_ids.filtered(lambda a: a.user_id == self.hr),
+            "HR should get a to-do after manager approval")
+
+    def test_final_approval_clears_activities(self):
+        request = self._manager_approved()
+        request.with_user(self.hr).action_hr_approve()
+        self.assertFalse(request.activity_ids)

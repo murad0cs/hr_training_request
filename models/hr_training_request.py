@@ -63,6 +63,9 @@ class HrTrainingRequest(models.Model):
         string='Status', default='draft', required=True, tracking=True,
         copy=False, index=True)
 
+    rejection_reason = fields.Text(
+        string='Rejection Reason', readonly=True, copy=False, tracking=True)
+
     # These drive button visibility in the form. They reuse the same role
     # checks as the write() guard, so the UI and the server never disagree.
     can_submit = fields.Boolean(compute='_compute_permissions')
@@ -160,32 +163,77 @@ class HrTrainingRequest(models.Model):
             if self.state == 'manager_approved' and not self._is_hr_approver():
                 raise AccessError(_("Only HR can reject at this stage."))
 
+    # Activity used to push the request to the next approver's inbox.
+    _APPROVAL_ACTIVITY = 'mail.mail_activity_data_todo'
+
+    def _schedule_review_activity(self, user):
+        if user:
+            self.activity_schedule(
+                self._APPROVAL_ACTIVITY, user_id=user.id,
+                summary=_("Training request to review"))
+
+    def _clear_review_activities(self):
+        self.activity_unlink([self._APPROVAL_ACTIVITY])
+
+    def _hr_approver_users(self):
+        # sudo() is used only to look up who belongs to the HR approver group so
+        # we can notify them. It reads group membership; it does not bypass any
+        # access rule on the training request itself.
+        group = self.env.ref('hr_training_request.group_training_hr_approver')
+        return group.sudo().users.filtered('active')
+
     def action_submit(self):
         self.write({'state': 'submitted'})
         self.message_post(body=_("Submitted for manager approval."))
+        for request in self:
+            request._schedule_review_activity(request.manager_id.user_id)
         return True
 
     def action_manager_approve(self):
         self.write({'state': 'manager_approved'})
         self.message_post(body=_("Approved by manager."))
-        return True
-
-    def action_manager_reject(self):
-        self.write({'state': 'rejected'})
-        self.message_post(body=_("Rejected by manager."))
+        for request in self:
+            request._clear_review_activities()
+            for hr_user in request._hr_approver_users():
+                request._schedule_review_activity(hr_user)
         return True
 
     def action_hr_approve(self):
         self.write({'state': 'hr_approved'})
+        self._clear_review_activities()
         self.message_post(body=_("Final approval granted by HR."))
-        return True
-
-    def action_hr_reject(self):
-        self.write({'state': 'rejected'})
-        self.message_post(body=_("Rejected by HR."))
         return True
 
     def action_cancel(self):
         self.write({'state': 'cancelled'})
+        self._clear_review_activities()
         self.message_post(body=_("Cancelled by the requester."))
+        return True
+
+    # Rejections capture a mandatory reason, so both reject buttons open the
+    # wizard rather than rejecting straight away.
+    def action_manager_reject(self):
+        return self._open_reject_wizard()
+
+    def action_hr_reject(self):
+        return self._open_reject_wizard()
+
+    def _open_reject_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Reject Request"),
+            'res_model': 'hr.training.request.reject.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_request_id': self.id},
+        }
+
+    def _apply_rejection(self, reason):
+        self.ensure_one()
+        # write() re-checks the role for the current stage, so only the manager
+        # (at submitted) or HR (at manager_approved) can actually reject.
+        self.write({'state': 'rejected', 'rejection_reason': reason})
+        self._clear_review_activities()
+        self.message_post(body=_("Rejected. Reason: %s") % reason)
         return True
