@@ -32,7 +32,7 @@ manager's own report, still no HR Notes tab.
 ![Manager submitted view](docs/02-manager-submitted.png)
 
 **HR approver, manager-approved stage** - Final Approve / Reject, and the extra
-**HR Notes** tab that only this role can see.
+**HR Notes** tab (open here) that only this role can see or edit.
 
 ![HR approver view](docs/03-hr-manager-approved.png)
 
