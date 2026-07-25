@@ -182,6 +182,14 @@ class HrTrainingRequest(models.Model):
         group = self.env.ref('hr_training_request.group_training_hr_approver')
         return group.sudo().users.filtered('active')
 
+    def _notify_requester(self, template_xmlid):
+        template = self.env.ref(template_xmlid, raise_if_not_found=False)
+        if not template:
+            return
+        for request in self:
+            if request.employee_id.user_id:
+                template.send_mail(request.id, force_send=False)
+
     def action_submit(self):
         self.write({'state': 'submitted'})
         self.message_post(body=_("Submitted for manager approval."))
@@ -202,6 +210,7 @@ class HrTrainingRequest(models.Model):
         self.write({'state': 'hr_approved'})
         self._clear_review_activities()
         self.message_post(body=_("Final approval granted by HR."))
+        self._notify_requester('hr_training_request.mail_template_training_approved')
         return True
 
     def action_cancel(self):
@@ -236,4 +245,5 @@ class HrTrainingRequest(models.Model):
         self.write({'state': 'rejected', 'rejection_reason': reason})
         self._clear_review_activities()
         self.message_post(body=_("Rejected. Reason: %s") % reason)
+        self._notify_requester('hr_training_request.mail_template_training_rejected')
         return True

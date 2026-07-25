@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="mail_template_training_approved" model="mail.template">
+            <field name="name">Training Request: Approved</field>
+            <field name="model_id" ref="model_hr_training_request"/>
+            <field name="subject">Training request {{ object.name }} approved</field>
+            <field name="email_from">{{ (object.company_id.email or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.employee_id.user_id.partner_id.id }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+                <div style="margin:0px;padding:0px;font-size:13px;">
+                    Hi <t t-out="object.employee_id.name or ''"/>,
+                    <br/><br/>
+                    Your training request <t t-out="object.name or ''"/> for
+                    "<t t-out="object.course_name or ''"/>" has been fully approved.
+                    <br/><br/>
+                    Provider: <t t-out="object.training_provider or 'N/A'"/><br/>
+                    Dates: <t t-out="object.start_date or ''"/> to <t t-out="object.end_date or ''"/>
+                </div>
+            </field>
+        </record>
+
+        <record id="mail_template_training_rejected" model="mail.template">
+            <field name="name">Training Request: Rejected</field>
+            <field name="model_id" ref="model_hr_training_request"/>
+            <field name="subject">Training request {{ object.name }} rejected</field>
+            <field name="email_from">{{ (object.company_id.email or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.employee_id.user_id.partner_id.id }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+                <div style="margin:0px;padding:0px;font-size:13px;">
+                    Hi <t t-out="object.employee_id.name or ''"/>,
+                    <br/><br/>
+                    Your training request <t t-out="object.name or ''"/> for
+                    "<t t-out="object.course_name or ''"/>" has been rejected.
+                    <br/><br/>
+                    Reason: <t t-out="object.rejection_reason or ''"/>
+                </div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -158,6 +158,29 @@
         </field>
     </record>
 
+    <record id="view_hr_training_request_pivot" model="ir.ui.view">
+        <field name="name">hr.training.request.pivot</field>
+        <field name="model">hr.training.request</field>
+        <field name="arch" type="xml">
+            <pivot string="Training Analysis" sample="1">
+                <field name="employee_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="cost" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_hr_training_request_graph" model="ir.ui.view">
+        <field name="name">hr.training.request.graph</field>
+        <field name="model">hr.training.request</field>
+        <field name="arch" type="xml">
+            <graph string="Training Analysis" type="bar" sample="1">
+                <field name="state"/>
+                <field name="cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
     <!-- One action per role, each opening on the filter that role cares about. -->
     <record id="action_training_request_my" model="ir.actions.act_window">
         <field name="name">My Requests</field>
@@ -185,6 +208,13 @@
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_hr_training_request_search"/>
         <field name="context">{'search_default_pending_hr': 1}</field>
+    </record>
+
+    <record id="action_training_request_report" model="ir.actions.act_window">
+        <field name="name">Training Analysis</field>
+        <field name="res_model">hr.training.request</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="search_view_id" ref="view_hr_training_request_search"/>
     </record>
 
 </odoo>

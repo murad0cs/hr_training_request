@@ -183,3 +183,21 @@ class TestHrTrainingRequest(TransactionCase):
         request = self._manager_approved()
         request.with_user(self.hr).action_hr_approve()
         self.assertFalse(request.activity_ids)
+
+    # Email notifications ----------------------------------------------
+
+    def _mails_for(self, request):
+        return self.env['mail.mail'].search([
+            ('model', '=', 'hr.training.request'), ('res_id', '=', request.id)])
+
+    def test_final_approval_emails_requester(self):
+        request = self._manager_approved()
+        request.with_user(self.hr).action_hr_approve()
+        self.assertTrue(self._mails_for(request),
+                        "final approval should queue an email to the requester")
+
+    def test_rejection_emails_requester(self):
+        request = self._manager_approved()
+        self._reject(request, self.hr, 'Over budget')
+        self.assertTrue(self._mails_for(request),
+                        "rejection should queue an email to the requester")

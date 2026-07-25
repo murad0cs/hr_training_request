@@ -1,5 +1,7 @@
 # HR Training Request
 
+![tests](https://github.com/murad0cs/hr_training_request/actions/workflows/tests.yml/badge.svg)
+
 An Odoo module that lets employees request external training or certifications
 and routes each request through a role-gated **Manager -> HR approval workflow**.
 The emphasis is on security (record rules + access rights + server-side state
@@ -25,8 +27,11 @@ guards), a clean state machine, and role-based UI, rather than field breadth.
 | Role-based UI | Workflow buttons and the HR-notes field appear only for the right role at the right stage, and are enforced again in Python. Data fields lock after `draft`. |
 | Reject reason | Rejecting opens a wizard that requires a reason; it is stored on the record and posted to the chatter. |
 | Approver activities | On submit a to-do is scheduled for the manager; on manager approval it moves to the HR approvers; it is cleared when the request is finalised. |
+| Email notifications | The requester is emailed (via `mail.template`) on final approval and on rejection (reason included). |
+| Reporting | Pivot and graph views (cost by employee / state) under a Reporting menu for HR. |
 | `hr.employee` | Computed `training_request_count` and a smart button, both filtered by the viewer's access rights. |
 | Tracking | State changes and key fields logged to the chatter (`mail.thread`). |
+| CI | GitHub Actions installs the module and runs the test suite on every push. |
 | Demo data | One user per role, a reporting line, and sample requests in every stage. |
 | Tests | A `TransactionCase` suite covering the security-critical paths. |
 
@@ -45,9 +50,10 @@ hr_training_request/
 │   ├── hr_training_request_security.xml   # groups + record rules
 │   └── ir.model.access.csv                # table-level CRUD per group
 ├── data/
-│   └── ir_sequence_data.xml       # TR#### reference sequence
+│   ├── ir_sequence_data.xml       # TR#### reference sequence
+│   └── mail_template_data.xml     # approval / rejection emails
 ├── views/
-│   ├── hr_training_request_views.xml      # form, tree, search, actions
+│   ├── hr_training_request_views.xml      # form, tree, search, pivot, graph, actions
 │   ├── hr_training_request_reject_wizard_views.xml
 │   ├── hr_training_request_menus.xml      # role-targeted menus
 │   └── hr_employee_views.xml              # smart button
@@ -55,6 +61,7 @@ hr_training_request/
 │   └── hr_training_request_demo.xml
 ├── tests/
 │   └── test_hr_training_request.py
+├── .github/workflows/tests.yml    # CI: install + run tests
 └── README.md
 ```
 
@@ -241,7 +248,9 @@ it to the chatter.
 To make the workflow push rather than pull, a to-do activity is scheduled for
 the next approver: for the manager on submit, and for the HR approvers on
 manager approval. Activities are cleared when the request is approved, rejected
-or cancelled, so nobody is left with a stale task.
+or cancelled, so nobody is left with a stale task. On final approval or
+rejection the requester is also emailed via a `mail.template` (the rejection
+email includes the reason).
 
 ### 4.8 `sudo()`
 
@@ -292,8 +301,7 @@ cancelled       cancelled  rejected              rejected
 
 ## 7. What I would improve with more time
 
-- **Email templates** on each transition (the reject reason and approver
-  activities are already implemented; email would layer on top).
-- Budget or approval-limit logic (for example auto-routing high-cost requests to a
-  second approver) and reporting views (pivot/graph by cost, provider, period).
+- Budget or approval-limit logic, for example auto-routing high-cost requests to
+  a second approver.
 - A configurable approval chain instead of the fixed manager then HR path.
+- A portal view so employees without backend access could submit requests.

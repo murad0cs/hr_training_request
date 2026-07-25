@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@v4
+        with:
+          path: hr_training_request
+
+      - name: Install module and run tests
+        run: |
+          docker run --rm --network host \
+            -v "${{ github.workspace }}/hr_training_request":/mnt/extra-addons/hr_training_request \
+            -e HOST=localhost -e PORT=5432 -e USER=odoo -e PASSWORD=odoo \
+            odoo:17 \
+            odoo -d ci_test -i hr_training_request \
+              --test-enable --test-tags /hr_training_request \
+              --stop-after-init --log-level=test

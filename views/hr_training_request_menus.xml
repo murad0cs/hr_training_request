@@ -25,4 +25,11 @@
               groups="hr_training_request.group_training_hr_approver"
               sequence="30"/>
 
+    <menuitem id="menu_training_reporting"
+              name="Reporting"
+              parent="menu_training_root"
+              action="action_training_request_report"
+              groups="hr_training_request.group_training_hr_approver"
+              sequence="40"/>
+
 </odoo>
