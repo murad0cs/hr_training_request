@@ -116,6 +116,15 @@ class TestHrTrainingRequest(TransactionCase):
         with self.assertRaises(ValidationError):
             request.with_user(self.requester).write({'state': 'hr_approved'})
 
+    def test_permission_flags_are_per_user(self):
+        request = self._submitted()
+        # Same record, read as two users in one transaction: the flags must
+        # reflect each user, not a value cached from the first read.
+        self.assertTrue(request.with_user(self.manager).can_manager_review)
+        self.assertFalse(request.with_user(self.requester).can_manager_review)
+        self.assertTrue(request.with_user(self.requester).can_cancel)
+        self.assertFalse(request.with_user(self.manager).can_cancel)
+
     # Record rules -----------------------------------------------------
 
     def test_record_rule_visibility(self):

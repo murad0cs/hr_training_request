@@ -25,6 +25,7 @@ class HrTrainingRequest(models.Model):
 
     employee_id = fields.Many2one(
         'hr.employee', string='Employee', required=True, tracking=True,
+        index=True, ondelete='restrict',
         default=lambda self: self.env.user.employee_id)
     manager_id = fields.Many2one(
         'hr.employee', string='Manager', related='employee_id.parent_id',
@@ -36,8 +37,8 @@ class HrTrainingRequest(models.Model):
     end_date = fields.Date(string='End Date')
 
     company_id = fields.Many2one(
-        'res.company', string='Company', required=True,
-        default=lambda self: self.env.company)
+        'res.company', string='Company', required=True, index=True,
+        ondelete='restrict', default=lambda self: self.env.company)
     currency_id = fields.Many2one(
         'res.currency', related='company_id.currency_id', readonly=True)
     cost = fields.Monetary(
@@ -73,7 +74,10 @@ class HrTrainingRequest(models.Model):
     can_manager_review = fields.Boolean(compute='_compute_permissions')
     can_hr_review = fields.Boolean(compute='_compute_permissions')
 
+    # depends_context('uid') keys the cache per user, so button visibility is
+    # evaluated for the current user rather than shared within a transaction.
     @api.depends('state', 'employee_id', 'manager_id', 'create_uid')
+    @api.depends_context('uid')
     def _compute_permissions(self):
         for request in self:
             request.can_submit = (
