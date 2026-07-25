@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="module_category_training" model="ir.module.category">
+            <field name="name">Training</field>
+            <field name="description">Employee training requests and approvals.</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- Groups form a chain: HR Approver implies Manager Approver, which
+             implies Requester, which implies the base internal user. Access is
+             cumulative, so each level only adds what it can do on top. -->
+        <record id="group_training_requester" model="res.groups">
+            <field name="name">Training Requester</field>
+            <field name="category_id" ref="module_category_training"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Raise and follow up on their own training requests.</field>
+        </record>
+
+        <record id="group_training_manager_approver" model="res.groups">
+            <field name="name">Training Manager Approver</field>
+            <field name="category_id" ref="module_category_training"/>
+            <field name="implied_ids" eval="[(4, ref('group_training_requester'))]"/>
+            <field name="comment">Approve or reject direct reports' requests at the submitted stage.</field>
+        </record>
+
+        <!-- Also implies hr.group_hr_user so HR reuses the standard access to
+             employee data rather than redefining it here. -->
+        <record id="group_training_hr_approver" model="res.groups">
+            <field name="name">Training HR Approver</field>
+            <field name="category_id" ref="module_category_training"/>
+            <field name="implied_ids"
+                   eval="[(4, ref('group_training_manager_approver')), (4, ref('hr.group_hr_user'))]"/>
+            <field name="comment">Final approval; sees every company request and the internal HR notes.</field>
+        </record>
+
+        <!-- Record rules are OR-combined across a user's groups. Because the
+             groups are chained, visibility widens automatically at each level. -->
+        <record id="training_request_rule_own" model="ir.rule">
+            <field name="name">Training Request: own requests</field>
+            <field name="model_id" ref="model_hr_training_request"/>
+            <field name="groups" eval="[(4, ref('group_training_requester'))]"/>
+            <field name="domain_force">
+                ['|', ('employee_id.user_id', '=', user.id), ('create_uid', '=', user.id)]
+            </field>
+        </record>
+
+        <record id="training_request_rule_team" model="ir.rule">
+            <field name="name">Training Request: team requests</field>
+            <field name="model_id" ref="model_hr_training_request"/>
+            <field name="groups" eval="[(4, ref('group_training_manager_approver'))]"/>
+            <field name="domain_force">
+                ['|', '|',
+                    ('manager_id.user_id', '=', user.id),
+                    ('employee_id.user_id', '=', user.id),
+                    ('create_uid', '=', user.id)]
+            </field>
+        </record>
+
+        <!-- Scoped to the user's allowed companies so multi-company stays isolated. -->
+        <record id="training_request_rule_hr" model="ir.rule">
+            <field name="name">Training Request: all company requests</field>
+            <field name="model_id" ref="model_hr_training_request"/>
+            <field name="groups" eval="[(4, ref('group_training_hr_approver'))]"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+    </data>
+</odoo>

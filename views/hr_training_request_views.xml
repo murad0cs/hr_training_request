@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hr_training_request_form" model="ir.ui.view">
+        <field name="name">hr.training.request.form</field>
+        <field name="model">hr.training.request</field>
+        <field name="arch" type="xml">
+            <form string="Training Request">
+                <header>
+                    <!-- invisible + groups only tidy up the UI; the real check
+                         is the server-side guard in write(). -->
+                    <button name="action_submit" type="object" string="Submit"
+                            class="oe_highlight" invisible="not can_submit"/>
+
+                    <button name="action_manager_approve" type="object"
+                            string="Approve" class="oe_highlight"
+                            invisible="not can_manager_review"
+                            groups="hr_training_request.group_training_manager_approver"/>
+                    <button name="action_manager_reject" type="object"
+                            string="Reject"
+                            invisible="not can_manager_review"
+                            groups="hr_training_request.group_training_manager_approver"/>
+
+                    <button name="action_hr_approve" type="object"
+                            string="Final Approve" class="oe_highlight"
+                            invisible="not can_hr_review"
+                            groups="hr_training_request.group_training_hr_approver"/>
+                    <button name="action_hr_reject" type="object"
+                            string="Reject"
+                            invisible="not can_hr_review"
+                            groups="hr_training_request.group_training_hr_approver"/>
+
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="not can_cancel"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,manager_approved,hr_approved"/>
+                </header>
+                <sheet>
+                    <field name="can_submit" invisible="1"/>
+                    <field name="can_cancel" invisible="1"/>
+                    <field name="can_manager_review" invisible="1"/>
+                    <field name="can_hr_review" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="course_name" readonly="state != 'draft'"/>
+                            <field name="start_date" readonly="state != 'draft'"/>
+                            <field name="cost" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="manager_id"/>
+                            <field name="training_provider" readonly="state != 'draft'"/>
+                            <field name="end_date" readonly="state != 'draft'"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="justification"
+                                   placeholder="Business justification for this training..."
+                                   readonly="state != 'draft'"/>
+                        </page>
+                        <page string="HR Notes" name="hr_notes"
+                              groups="hr_training_request.group_training_hr_approver">
+                            <field name="hr_notes"
+                                   placeholder="Internal HR notes, visible to HR approvers only..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hr_training_request_tree" model="ir.ui.view">
+        <field name="name">hr.training.request.tree</field>
+        <field name="model">hr.training.request</field>
+        <field name="arch" type="xml">
+            <tree string="Training Requests" sample="1">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="course_name"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="cost" widget="monetary" sum="Total"/>
+                <field name="hr_notes" optional="hide"
+                       groups="hr_training_request.group_training_hr_approver"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'submitted'"
+                       decoration-warning="state == 'manager_approved'"
+                       decoration-success="state == 'hr_approved'"
+                       decoration-danger="state == 'rejected'"
+                       decoration-muted="state == 'cancelled'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_hr_training_request_search" model="ir.ui.view">
+        <field name="name">hr.training.request.search</field>
+        <field name="model">hr.training.request</field>
+        <field name="arch" type="xml">
+            <search string="Training Requests">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="course_name"/>
+                <field name="manager_id"/>
+
+                <filter name="my_requests" string="My Requests"
+                        domain="[('employee_id.user_id', '=', uid)]"/>
+                <filter name="my_team" string="My Team"
+                        domain="[('manager_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="draft" string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Submitted"
+                        domain="[('state', '=', 'submitted')]"/>
+                <filter name="manager_approved" string="Manager Approved"
+                        domain="[('state', '=', 'manager_approved')]"/>
+                <filter name="hr_approved" string="HR Approved"
+                        domain="[('state', '=', 'hr_approved')]"/>
+                <filter name="rejected" string="Rejected"
+                        domain="[('state', '=', 'rejected')]"/>
+                <filter name="cancelled" string="Cancelled"
+                        domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <filter name="pending_manager" string="Pending Manager Approval"
+                        domain="[('state', '=', 'submitted')]"/>
+                <filter name="pending_hr" string="Pending HR Approval"
+                        domain="[('state', '=', 'manager_approved')]"/>
+
+                <group expand="0" string="Group By">
+                    <filter name="group_employee" string="Employee"
+                            context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_manager" string="Manager"
+                            context="{'group_by': 'manager_id'}"/>
+                    <filter name="group_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- One action per role, each opening on the filter that role cares about. -->
+    <record id="action_training_request_my" model="ir.actions.act_window">
+        <field name="name">My Requests</field>
+        <field name="res_model">hr.training.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_hr_training_request_search"/>
+        <field name="context">{'search_default_my_requests': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Request some training</p>
+            <p>Raise a request for external training or a certification and send it for approval.</p>
+        </field>
+    </record>
+
+    <record id="action_training_request_team" model="ir.actions.act_window">
+        <field name="name">Team Requests</field>
+        <field name="res_model">hr.training.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_hr_training_request_search"/>
+        <field name="context">{'search_default_my_team': 1, 'search_default_pending_manager': 1}</field>
+    </record>
+
+    <record id="action_training_request_hr" model="ir.actions.act_window">
+        <field name="name">HR Approvals</field>
+        <field name="res_model">hr.training.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_hr_training_request_search"/>
+        <field name="context">{'search_default_pending_hr': 1}</field>
+    </record>
+
+</odoo>

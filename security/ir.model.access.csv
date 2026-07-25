@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_training_request_requester,hr.training.request.requester,model_hr_training_request,group_training_requester,1,1,1,0
+access_hr_training_request_manager,hr.training.request.manager,model_hr_training_request,group_training_manager_approver,1,1,1,0
+access_hr_training_request_hr,hr.training.request.hr,model_hr_training_request,group_training_hr_approver,1,1,1,1

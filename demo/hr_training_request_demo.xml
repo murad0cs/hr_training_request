@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- One user per role so the workflow can be tested end to end.
+             Passwords match the logins (sarah / james / dana). -->
+        <record id="user_demo_employee" model="res.users">
+            <field name="name">Sarah Chen</field>
+            <field name="login">sarah</field>
+            <field name="password">sarah</field>
+            <field name="email">sarah@example.com</field>
+            <field name="groups_id"
+                   eval="[(6, 0, [ref('hr_training_request.group_training_requester')])]"/>
+        </record>
+
+        <record id="user_demo_manager" model="res.users">
+            <field name="name">James Patel</field>
+            <field name="login">james</field>
+            <field name="password">james</field>
+            <field name="email">james@example.com</field>
+            <field name="groups_id"
+                   eval="[(6, 0, [ref('hr_training_request.group_training_manager_approver')])]"/>
+        </record>
+
+        <record id="user_demo_hr" model="res.users">
+            <field name="name">Dana Ortiz</field>
+            <field name="login">dana</field>
+            <field name="password">dana</field>
+            <field name="email">dana@example.com</field>
+            <field name="groups_id"
+                   eval="[(6, 0, [ref('hr_training_request.group_training_hr_approver')])]"/>
+        </record>
+
+        <!-- Give the built-in administrator the HR role for convenience. -->
+        <record id="base.user_admin" model="res.users">
+            <field name="groups_id"
+                   eval="[(4, ref('hr_training_request.group_training_hr_approver'))]"/>
+        </record>
+
+        <!-- Sarah reports to James. -->
+        <record id="emp_manager" model="hr.employee">
+            <field name="name">James Patel</field>
+            <field name="user_id" ref="user_demo_manager"/>
+        </record>
+
+        <record id="emp_employee" model="hr.employee">
+            <field name="name">Sarah Chen</field>
+            <field name="user_id" ref="user_demo_employee"/>
+            <field name="parent_id" ref="emp_manager"/>
+        </record>
+
+        <record id="emp_hr" model="hr.employee">
+            <field name="name">Dana Ortiz</field>
+            <field name="user_id" ref="user_demo_hr"/>
+        </record>
+
+        <!-- Sample requests, one per workflow stage. -->
+        <record id="req_draft" model="hr.training.request">
+            <field name="employee_id" ref="emp_employee"/>
+            <field name="course_name">AWS Solutions Architect</field>
+            <field name="training_provider">AWS Training</field>
+            <field name="start_date">2026-08-12</field>
+            <field name="end_date">2026-08-14</field>
+            <field name="cost">450.00</field>
+            <field name="justification">Needed for the upcoming cloud migration project.</field>
+            <field name="state">draft</field>
+        </record>
+
+        <record id="req_submitted" model="hr.training.request">
+            <field name="employee_id" ref="emp_employee"/>
+            <field name="course_name">Certified Kubernetes Administrator</field>
+            <field name="training_provider">Linux Foundation</field>
+            <field name="start_date">2026-09-01</field>
+            <field name="end_date">2026-09-03</field>
+            <field name="cost">395.00</field>
+            <field name="justification">Team is adopting Kubernetes for deployments.</field>
+            <field name="state">submitted</field>
+        </record>
+
+        <record id="req_manager_approved" model="hr.training.request">
+            <field name="employee_id" ref="emp_employee"/>
+            <field name="course_name">PostgreSQL Performance Tuning</field>
+            <field name="training_provider">EDB</field>
+            <field name="start_date">2026-09-15</field>
+            <field name="end_date">2026-09-16</field>
+            <field name="cost">300.00</field>
+            <field name="justification">Improve database performance for reporting.</field>
+            <field name="state">manager_approved</field>
+            <field name="hr_notes">Salary band eligible for training budget line B.</field>
+        </record>
+
+        <record id="req_hr_approved" model="hr.training.request">
+            <field name="employee_id" ref="emp_manager"/>
+            <field name="course_name">Leadership Essentials</field>
+            <field name="training_provider">Coursera</field>
+            <field name="start_date">2026-07-01</field>
+            <field name="end_date">2026-07-05</field>
+            <field name="cost">120.00</field>
+            <field name="justification">Manager development track.</field>
+            <field name="state">hr_approved</field>
+        </record>
+
+    </data>
+</odoo>

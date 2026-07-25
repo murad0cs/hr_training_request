@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_form_training" model="ir.ui.view">
+        <field name="name">hr.employee.form.training.button</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <!-- Count and target list are both filtered by the record rules,
+                 so each viewer only sees what they may access. -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_training_requests" type="object"
+                        class="oe_stat_button" icon="fa-graduation-cap"
+                        groups="hr_training_request.group_training_requester">
+                    <field name="training_request_count" widget="statinfo"
+                           string="Training"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

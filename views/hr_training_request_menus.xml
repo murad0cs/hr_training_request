@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_training_root"
+              name="Training"
+              sequence="90"/>
+
+    <menuitem id="menu_training_my"
+              name="My Requests"
+              parent="menu_training_root"
+              action="action_training_request_my"
+              sequence="10"/>
+
+    <menuitem id="menu_training_team"
+              name="Team Requests"
+              parent="menu_training_root"
+              action="action_training_request_team"
+              groups="hr_training_request.group_training_manager_approver"
+              sequence="20"/>
+
+    <menuitem id="menu_training_hr"
+              name="HR Approvals"
+              parent="menu_training_root"
+              action="action_training_request_hr"
+              groups="hr_training_request.group_training_hr_approver"
+              sequence="30"/>
+
+</odoo>
