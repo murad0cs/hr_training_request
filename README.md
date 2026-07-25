@@ -2,9 +2,6 @@
 
 ![tests](https://github.com/murad0cs/hr_training_request/actions/workflows/tests.yml/badge.svg)
 
-> Assignment submission by **Md. Abdullah Al Murad** — Mid-Level Software
-> Engineer (Odoo), Indetechs Software Limited.
-
 An Odoo module that lets employees request external training or certifications
 and routes each request through a role-gated **Manager -> HR approval workflow**.
 The emphasis is on security (record rules + access rights + server-side state
