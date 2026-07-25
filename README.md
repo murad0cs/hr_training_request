@@ -86,6 +86,8 @@ hr_training_request/
 │   └── hr_employee_views.xml              # smart button
 ├── demo/
 │   └── hr_training_request_demo.xml
+├── i18n/
+│   └── hr_training_request.pot     # translation template
 ├── tests/
 │   └── test_hr_training_request.py
 ├── .github/workflows/tests.yml    # CI: install + run tests

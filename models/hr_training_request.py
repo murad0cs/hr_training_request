@@ -105,6 +105,13 @@ class HrTrainingRequest(models.Model):
         return self.env.user.has_group(
             'hr_training_request.group_training_hr_approver')
 
+    @api.onchange('start_date')
+    def _onchange_start_date(self):
+        # Convenience: pre-fill the end date with the start date for the common
+        # single-day course, leaving the user free to extend it.
+        if self.start_date and not self.end_date:
+            self.end_date = self.start_date
+
     @api.constrains('cost')
     def _check_cost(self):
         for request in self:
@@ -174,6 +181,7 @@ class HrTrainingRequest(models.Model):
         if user:
             self.activity_schedule(
                 self._APPROVAL_ACTIVITY, user_id=user.id,
+                date_deadline=self.start_date or fields.Date.context_today(self),
                 summary=_("Training request to review"))
 
     def _clear_review_activities(self):

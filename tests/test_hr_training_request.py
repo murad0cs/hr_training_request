@@ -135,6 +135,17 @@ class TestHrTrainingRequest(TransactionCase):
         self.assertTrue(model.with_user(self.manager).search([('id', '=', request.id)]))
         self.assertTrue(model.with_user(self.hr).search([('id', '=', request.id)]))
 
+    def test_hr_record_rule_is_company_scoped(self):
+        main = self.env.company
+        company_b = self.env['res.company'].create({'name': 'TTR Company B'})
+        request = self._create()
+        request.company_id = company_b.id
+        scoped = self.env['hr.training.request'].with_user(self.hr) \
+            .with_context(allowed_company_ids=[main.id])
+        self.assertFalse(
+            scoped.search([('id', '=', request.id)]),
+            "HR limited to company A must not see a company-B request")
+
     # Field-level access -----------------------------------------------
 
     def test_hr_notes_hidden_from_non_hr(self):
@@ -174,10 +185,13 @@ class TestHrTrainingRequest(TransactionCase):
     # Activities -------------------------------------------------------
 
     def test_submit_schedules_manager_activity(self):
-        request = self._submitted()
+        request = self._create(start_date='2026-08-12', end_date='2026-08-14')
+        request.with_user(self.requester).action_submit()
         todos = request.activity_ids.filtered(
             lambda a: a.user_id == self.manager)
         self.assertTrue(todos, "submit should schedule a to-do for the manager")
+        self.assertEqual(todos.date_deadline, request.start_date,
+                         "the to-do should be due on the training start date")
 
     def test_manager_approval_moves_activity_to_hr(self):
         request = self._manager_approved()
